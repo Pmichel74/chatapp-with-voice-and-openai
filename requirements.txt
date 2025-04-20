@@ -1,4 +1,8 @@
+# Framework web pour développer l'application
 Flask
+# Extension Flask pour gérer les requêtes cross-origin (CORS)
 Flask_Cors
+# API OpenAI pour l'accès aux modèles d'IA (ChatGPT, etc.)
 openai
+# Bibliothèque pour effectuer des requêtes HTTP
 requests

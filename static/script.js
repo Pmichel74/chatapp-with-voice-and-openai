@@ -26,14 +26,33 @@ function hideUserLoadingAnimation() {
 }
 
 const getSpeechToText = async (userRecording) => {
-  let response = await fetch(baseUrl + "/speech-to-text", {
-    method: "POST",
-    body: userRecording.audioBlob,
-  });
-  console.log(response);
-  response = await response.json();
-  console.log(response);
-  return response.text;
+  try {
+    console.log("Envoi de l'audio au serveur...");
+    console.log("Taille du blob audio envoyé:", userRecording.audioBlob.size);
+    
+    let response = await fetch(baseUrl + "/speech-to-text", {
+      method: "POST",
+      body: userRecording.audioBlob,
+    });
+    
+    console.log("Statut de la réponse:", response.status);
+    if (!response.ok) {
+      throw new Error("Erreur de réponse du serveur: " + response.status);
+    }
+    
+    response = await response.json();
+    console.log("Réponse JSON:", response);
+    
+    if (!response.text) {
+      console.warn("Texte non trouvé dans la réponse:", response);
+      return "Désolé, je n'ai pas pu comprendre ce que vous avez dit.";
+    }
+    
+    return response.text;
+  } catch (error) {
+    console.error("Erreur lors de la conversion parole-texte:", error);
+    return "Erreur: " + error.message;
+  }
 };
 
 const processUserMessage = async (userMessage) => {
@@ -57,30 +76,45 @@ const cleanTextInput = (value) => {
 
 const recordAudio = () => {
   return new Promise(async (resolve) => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    const audioChunks = [];
+    try {
+      console.log("Demande d'accès au microphone...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Accès au microphone accordé!");
+      
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks = [];
 
-    mediaRecorder.addEventListener("dataavailable", (event) => {
-      audioChunks.push(event.data);
-    });
-
-    const start = () => mediaRecorder.start();
-
-    const stop = () =>
-      new Promise((resolve) => {
-        mediaRecorder.addEventListener("stop", () => {
-          const audioBlob = new Blob(audioChunks, { type: "audio/mpeg" });
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-          const play = () => audio.play();
-          resolve({ audioBlob, audioUrl, play });
-        });
-
-        mediaRecorder.stop();
+      mediaRecorder.addEventListener("dataavailable", (event) => {
+        console.log("Données audio disponibles", event.data.size);
+        audioChunks.push(event.data);
       });
 
-    resolve({ start, stop });
+      const start = () => {
+        console.log("Début de l'enregistrement");
+        mediaRecorder.start();
+      };
+
+      const stop = () =>
+        new Promise((resolve) => {
+          mediaRecorder.addEventListener("stop", () => {
+            console.log("Enregistrement terminé, création du blob audio...");
+            // Changement du format audio de mpeg à wav
+            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            console.log("Taille du blob audio:", audioBlob.size);
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            const play = () => audio.play();
+            resolve({ audioBlob, audioUrl, play });
+          });
+
+          mediaRecorder.stop();
+        });
+
+      resolve({ start, stop });
+    } catch (error) {
+      console.error("Erreur lors de l'accès au microphone:", error);
+      alert("Erreur d'accès au microphone: " + error.message);
+    }
   });
 };
 
