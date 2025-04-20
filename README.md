@@ -178,7 +178,7 @@ This project uses IBM Watson and OpenAI services. Thanks to their teams for maki
 
 ## 📄 License
 
-MIT © [Your Name]
+MIT © [Patrick MICHEL]
 
 ---
 
